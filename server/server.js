@@ -19,15 +19,25 @@ app.use(express.json());
 app.post("/create", (req, res) => {
   const data = req.body;
   if (!data || !data.id) {
-    console.log(data);
     return res.status(400).json({ error: "ID is required in request body" });
   }
   listOfData.push(data);
-  res.status(201).json({ message: "Data created successfully", data });
+  return res.status(201).json({ data });
 });
 
-app.get("/list", (req, res) => {
-  res.status(200).json({ data: listOfData });
+app.get("/list", (_, res) => {
+  return res.status(200).json({ data: listOfData });
+});
+
+app.get("/list/:id", (req, res) => {
+  const { id } = req.params;
+  const item = listOfData.find((data) => data.id === +id);
+
+  if (!item) {
+    return res.status(404).json({ message: "Item not found" });
+  }
+
+  return res.status(200).json({ data: item });
 });
 
 app.patch("/edit", (req, res) => {
@@ -42,8 +52,7 @@ app.patch("/edit", (req, res) => {
   }
 
   listOfData[itemIndex] = { ...listOfData[itemIndex], ...updatedData };
-  res.status(200).json({
-    message: "Data updated successfully",
+  return res.status(200).json({
     data: listOfData[itemIndex],
   });
 });

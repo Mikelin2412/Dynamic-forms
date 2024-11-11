@@ -1,8 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray } from "react-hook-form";
 import * as yup from "yup";
 import styles from "./style.module.css";
+import { createRecord, editRecord } from "../../api/api";
+import { useNavigate } from "react-router-dom";
+import {
+  prepareCreatedPayloadForSending,
+  prepareEditPayloadForSending,
+} from "../../utils/libs";
 
 const phoneRegExp =
   /^(\+375|8)(\s|-)?(17|25|29|33|44)(\s|-)?\d{3}(\s|-)?\d{2}(\s|-)?\d{2}$|^(\+375|8)(17|25|29|33|44)\d{7}$/;
@@ -43,11 +49,12 @@ const schema = yup
   })
   .required();
 
-const Form = ({ title }) => {
+const Form = ({ title, listData }) => {
   const [isAdditionalInfoVisible, setIsAdditionalInfoVisible] = useState(false);
   const {
     control,
     register,
+    reset,
     handleSubmit,
     formState: { errors },
   } = useForm({
@@ -57,9 +64,28 @@ const Form = ({ title }) => {
     control,
     name: "additionalInfo",
   });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (listData) {
+      reset(listData);
+
+      if (listData.additionalInfo.length > 0) {
+        setIsAdditionalInfoVisible(true);
+      }
+    }
+  }, [listData]);
 
   const onSubmit = (data) => {
-    console.log(data);
+    if (listData) {
+      const payload = prepareEditPayloadForSending(data, listData);
+      editRecord(payload);
+    } else {
+      data.id = Date.now();
+      const payload = prepareCreatedPayloadForSending(data);
+      createRecord(payload);
+    }
+    navigate("/");
   };
 
   return (
@@ -101,7 +127,7 @@ const Form = ({ title }) => {
           className={styles.input}
           type="tel"
           placeholder="Your number"
-          {...register("phone")}
+          {...register("phone", { required: true })}
         />
         <p className={styles.error}>{errors.phone?.message}</p>
       </div>
@@ -113,12 +139,12 @@ const Form = ({ title }) => {
           min={1}
           max={100}
           placeholder="Your age"
-          {...register("age")}
+          {...register("age", { required: true })}
         />
         <p className={styles.error}>{errors.age?.message}</p>
       </div>
       <div className={styles.roleBlock}>
-        <label>Role: *</label>
+        <label>Role:</label>
         <select {...register("role")}>
           <option value="frontend developer">Frontend Developer</option>
           <option value="backend developer">Backend Developer</option>
@@ -137,7 +163,7 @@ const Form = ({ title }) => {
           className={styles.input}
           type="text"
           placeholder="Subject"
-          {...register("subject")}
+          {...register("subject", { required: true })}
         />
         <p className={styles.error}>{errors.subject?.message}</p>
       </div>
